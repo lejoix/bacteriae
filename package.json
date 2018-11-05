@@ -1,0 +1,24 @@
+{
+  "name": "bacteriaesimulator",
+  "version": "1.0.0",
+  "description": "Bactera simulator for research project",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lejoix/bacteriae.git"
+  },
+  "keywords": [
+    "bacteria",
+    "simulator",
+    "upm"
+  ],
+  "author": "Zsolt Janosi <zsolt.janosi@3ss.tv>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lejoix/bacteriae/issues"
+  },
+  "homepage": "https://github.com/lejoix/bacteriae#readme"
+}

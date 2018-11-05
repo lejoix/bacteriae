@@ -1,3 +1,16 @@
+class Element {
+    constructor(simulator, row, col, index, energy) {
+        this.simulator = simulator;
+        this.canvas = this.simulator.canvas;
+        this.energy = energy;
+        this.row = row;
+        this.col = col;
+        this.index = index;
+
+        return this;
+    }
+}
+
 class Bacteria extends Element {
     constructor(simulator, row, col, index, energy, motherBacteria, lake) {
         super(simulator, row, col, index, energy);
@@ -221,19 +234,6 @@ class Bacteria extends Element {
         this.currentdir = moveDirections[this.curdir]; //update movepossibilities relatively
         // console.log('AFTER!!! curdir: ', this.curdir,  'selecteddir: ', moveDir, 'position: ', move, 'currentdir: ', this.currentdir);
         return move;
-    }
-}
-
-class Element {
-    constructor(simulator, row, col, index, energy) {
-        this.simulator = simulator;
-        this.canvas = this.simulator.canvas;
-        this.energy = energy;
-        this.row = row;
-        this.col = col;
-        this.index = index;
-
-        return this;
     }
 }
 
