@@ -1,0 +1,59 @@
+<html>
+	<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>  	
+  	<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.22/fabric.min.js"></script>
+  	<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js"></script>
+	<script type="text/javascript" src="def.js"></script>
+	<script type="text/javascript" src="simulator.js"></script>
+	<style>
+		label {
+			padding: 1px 0;
+			display: inline-block;
+		}
+
+		input[type="text"] {
+			padding: 5px;
+			float:right;
+			width: 50px;
+    		text-align: right;
+    		height: 20px;
+		}
+
+		input[type="button"] {
+			padding: 10px;
+		}
+
+		.controls {
+			padding-bottom: 5px;
+		}
+
+		.inputs {
+			width: 250px;
+		}
+	</style>
+	<body>
+		<div class="controls">
+			<input type="button" value="Start" id="restart">
+			<input type="button" value="Step" id="step">
+			<input type="button" value="(Re)Create" id="create">
+		</div>
+		<div class="inputs">
+			<label id="lake">Lake count: </label>
+			<input id="lakecount" type="text" value="1"/>
+			<br>
+			<label id="bacteriacount">Bacteria count: </label>
+			<input id="bacteria" type="text" value="20"/>
+			<br>
+			<label id="foodcount">Food count: </label>
+			<input id="food" type="text" value="100"/>
+			<br>
+			<label id="childrencount">Children count: 0</label>
+			<label id="deadcount">Dead bacteria count: 0</label>
+			<br>
+			<label id="iterationcount">Iteration count: 0</label>
+			<br>
+			<label id="season">Season: </label>
+			<br>
+		</div>	
+		<canvas id="canvas" width="1000" height="1000"></canvas>
+	</body>
+</html>
