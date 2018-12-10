@@ -1,453 +1,511 @@
 class BacteriaeSimulator {
-	constructor(canvas='canvas', bacteriacount = 10, foodcount, lakenumber) {
-		this.maxiteration = 10000;
-		this.iteration = 0;
-		this.updateInterval = 500;
-		this.bacteriaCount = bacteriacount || 10;
-		this.size = 7 + Math.floor(this.bacteriaCount / 2);
-		this.scale = 15 + (250 / this.bacteriaCount * 2) / 2 - 5;
-		this.foodCount = foodcount || this.bacteriaCount * 10;
-		this.initialbacteriaEnergy = 40;
-		this.maxBacteriaEnergy = 60; //max bacteria energy
-		this.splitBacteriaEnergy = 100; //energy for splitting
-		this.foodEnergy = 20; //energy value of food
-		this.energyLoss = 1;
-		this.hibernateEnergy = 10;
-		this.hibernateRounds = 20;
-		this.mutation = 0.05;
-		this.children = 0;
-		this.layfood = 0;
-		this.lake = new Lake(this, lakenumber);
+    constructor(bacteriacount = 10, foodcount, foodfactor = 1, lakenumber) {
+        this.maxiteration = 10000;
+        this.iteration = 0;
+        this.updateInterval = 500;//(bacteriacount * 4 < 700) ? 700 : bacteriacount * 4;
+        // this.updateInterval = (bacteriacount * 4 >100 700) ? 700 : bacteriacount * 4;
+        this.bacteriaCount = bacteriacount || 10;
+        this.size = Math.floor(this.bacteriaCount / 4);
+        this.size = (this.size < 10) ? 10 : this.size;
+        this.size = (this.size > 100) ? 100 : this.size;
+        this.scale = $(window).width() / (bacteriacount / 1.5);
+        this.scale = (this.scale > 40) ? 40 : this.scale;
+        this.scale = (this.scale < 7) ? 7 : this.scale;
+        this.foodCount = foodcount || this.bacteriaCount * 10;
+        this.foodFactor = foodfactor || 1;
+        this.initialbacteriaEnergy = 40;
+        this.maxBacteriaEnergy = 60; //max bacteria energy
+        this.splitBacteriaEnergy = 200; //energy for splitting
+        this.strongness = 1;
+        this.foodEnergy = 30; //energy value of food
+        this.energyLoss = 1;
+        this.hibernateEnergy = 20;
+        this.hibernateRounds = 10;
+        this.mutation = 0.05;
+        this.mutationAmount = 0.1;
+        this.children = 0;
+        this.layfood = 0;
+        this.lake = new Lake(this, lakenumber);
+        this.oldestBacteria = {age:null};
+        this.newestBacteria = {};
+        this.stopFlag = false;
+        this.bacteriastat = {
+            normal: 0,
+            lvl1: 0,
+            lvl2: 0,
+            lvl3: 0,
+            lvl4: 0,
+            lvl5: 0
+        };
 
         this.foodSeasons = [{ //0 - spring, 1 - summer, 2 - autumn, 3 - winter
-				name: 'spring',
-				iteration: 100,
-				foodperiter: 5,
-				trigger: 7
-			},{
-				name: 'summer',
-				iteration: 90,
-				foodperiter: 5,
-				trigger: 4
-			},{
-				name: 'autumn',
-				iteration: 90,
-				foodperiter: 1,
-				trigger: 4
-			},{
-				name: 'winter',
-				iteration: 90,
-				foodperiter: 1,
-				trigger: 10
-			}]; //number of iterations for a season and number of food per iteration
-		this.seasonIteration = 0;	
-		this.currentSeason = 0; //default spring
-		this.deadcount = 0;
-		this.bacterias = []; //all bacterias
-		this.foods = []; //all foods
-		this.sleep = 0; //optimization
-		this.updating = false; //optimization
-		this.allbacterias = 0;
+            name: 'spring',
+            iteration: 100,
+            foodperiter: 4 * this.foodFactor,
+            trigger: 7 / this.foodFactor
+        }, {
+            name: 'summer',
+            iteration: 90,
+            foodperiter: 2 * this.foodFactor,
+            trigger: 3 / this.foodFactor
+        }, {
+            name: 'autumn',
+            iteration: 40,
+            foodperiter: 2 * this.foodFactor,
+            trigger: 4 / this.foodFactor
+        }, {
+            name: 'winter',
+            iteration: 90,
+            foodperiter: 1 * this.foodFactor,
+            trigger: 7 / this.foodFactor
+        }]; //number of iterations for a season and number of food per iteration
+        this.seasonIteration = 0;
+        this.currentSeason = 0; //default spring
+        this.deadcount = 0;
+        this.bacterias = []; //all bacterias
+        this.foods = []; //all foods
+        this.sleep = 0; //optimization
+        this.updating = false; //optimization
+        this.allbacterias = 0;
 
-		//todo seturi de anotimpuri pe zone geografice
         //todo simulari = lacuri si se deschide poarta intre lacuri, indivizii trec dintr-un lac in altul
-        this.canvas = canvas;
-		// this.canvas.setWidth(this.size * this.scale * this.lake.lakeNumber + 10);
-		// this.canvas.setHeight(this.size * this.scale * this.lake.lakeNumber + 10);
-		this.createGrid();
-		var [r, c] = [this.size, this.size]; 
-		this.field = Array(r).fill().map(()=>Array(c).fill({})); 
+        this.createGrid();
+        var [r, c] = [this.size, this.size];
+        this.field = Array(r).fill().map(() => Array(c).fill({}));
 
-		for(let row = 0; row < this.size; row++){
-			for(let col = 0; col < this.size; col++) {
-				this.field[row][col] = new Object({
-					bacterias: [],
-					foods: []
-				});
-			}
-		}
-
-		//create bacterias
-		for(let i = 0; i < this.bacteriaCount; i++) {
-			this.createBacteria();
-		}
-
-		//create food
-		this.createFood(this.foodCount);
-		console.log(this.field);
-
-		$('#bacteriacount').text('Bacteria count: ' + this.bacterias.length.toString());
-		$('#foodcount').text('Food count: 		' + this.foods.length.toString());
-		$('#childrencount').text('Children count: ' + (this.children).toString());
-		$('#iterationcount').text('Iteration count: ' + (this.iteration).toString());
-
-		return this;
-	}
-
-	createBacteria(motherBacteria = {}) {
-		var row = getRandomInt(this.size);
-		var col = getRandomInt(this.size);
-		var bact = new Bacteria(this, row, col, ++this.allbacterias, this.initialbacteriaEnergy, motherBacteria, this.lake);
-
-		this.bacterias.push(bact);
-		this.field[row][col].bacterias.push(bact);
-	}
-
-	addBacteria() {
-
-	}
-
-	removeBacteria() {
-
-	}
-
-	bacteriaSwitchLakes() {
-
-	}
-
-	createFood(foodCount) {
-		var row, col;
-		for (let i = 0; i < foodCount; i++) {
-			row = getRandomInt(this.size);
-			col = getRandomInt(this.size);		
-			var food = new Food(this, row, col, this.foods.length, this.foodEnergy, this.lake);
-
-			this.foods.push(food);
-			this.field[row][col].foods.push(food);
-		}
-	}
-	
-	createGrid() {
-		for (let i = 0; i <= this.size; i++) {
-			let scale = this.scale;
-			if (i == 0 || i == this.size) {
-				scale = this.scale * 6;
-			}
-			this.canvas.add(makeLine(i * this.scale + this.lake.lakeY, 0 + this.lake.lakeX,
-				i * this.scale + this.lake.lakeY, this.size * this.scale + this.lake.lakeX, scale));
-			this.canvas.add(makeLine(0 + this.lake.lakeY, i * this.scale + this.lake.lakeX,
-				this.size * this.scale + this.lake.lakeY, i * this.scale + this.lake.lakeX, scale));
-		}
-	}
-
-	start() {
-		//start by updating initial state
-		this.updateByRules(true);
-
-		this.process = setInterval(() => {
-			this.move();
-		}, this.updateInterval);
-	}
-
-	stop() {
-		clearTimeout(this.process);
-	}
-
-	move() {
-		if ((this.updating || this.iteration % 30 === 0) && this.sleep < 1)  {//wait for refresh
-			this.sleep++;
-			//clear any leftovers;
-			// for (let row = 0; row < this.size; row++) {
-			// 	for(let col = 0; col < this.size; col++) {
-			// 		let bacterias = this.field[row][col].bacterias;
-
-			// 		_.forEach(bacterias, (bact, index) => {
-			// 			if (bact.dead) {
-			// 				if (this.field[bacteria.row][bacteria.col].bacterias.length == 1) {
-			// 					this.field[bacteria.row][bacteria.col].bacterias = [];
-			// 				} else {
-			// 					this.field[bacteria.row][bacteria.col].bacterias.splice(index, 1);
-			// 				}
-							
-			// 				this.canvas.remove(bact.group);
-			// 			}
-			// 		});
-			// 	}
-			// }
-			return;
-		}
-
-		this.sleep = 0;
-		this.iteration++;
-		this.updating = true;
-
-		if (this.iteration >= this.maxiteration) {
-			window.alert('Max iteration reached! Stopping simulation!');
-			$("#restart").trigger('click');		
-		}
-		if (this.bacterias <= 0) {
-			window.alert('All bacterias are dead! Simulation over!');
-			console.log('All bacterias are dead! Simulation over!');
-			$("#restart").trigger('click');		
-		}
-
-		//set food 
-		let nextSeason = this.currentSeason + 1;
-		if (nextSeason > 3) {
-			nextSeason = 0;
-		}
-
-		//...and change seasons if needed
-		if (this.seasonIteration >= this.foodSeasons[nextSeason].iteration) {
-			this.seasonIteration = 0;
-			this.currentSeason = nextSeason;
-			console.info('CHANGING SEASONS!! ', this.foodSeasons[this.currentSeason].name);
-		}
-
-		this.layfood++;
-		this.seasonIteration++;
-
-		if (this.layfood >= this.foodSeasons[this.currentSeason].trigger) {
-			this.layfood = 0;
-			console.log('LAYING FOOD!! SEASONS:', this.foodSeasons[this.currentSeason].name, 'foodcount:',  this.foodSeasons[this.currentSeason].foodperiter);
-			this.createFood(this.foodSeasons[this.currentSeason].foodperiter);
-		}
-
-		$('#bacteriacount').text('Bacteria count: ' + this.bacterias.length.toString());
-		$('#foodcount').text('Food count: ' + this.foods.length.toString());
-		$('#childrencount').text('Children count: ' + (this.children).toString());
-		$('#iterationcount').text('Iteration count: ' + (this.iteration).toString());
-		$('#deadcount').text('Dead bacteria count: ' + (this.deadcount).toString());
-
-		//make movement + redraw
-		let moveit = 0;
-		_.forEach(this.bacterias, (bact) => {
-			if (bact.hibernate > 0) {
-				bact.hibernate -= 1;
-				bact.text.setText((this.iteration - bact.age).toString());
-
-				return;
-			}
-
-			bact.move();
-		});
-
-		// this.canvas.renderAll();
-		this.updateByRules();
-		// this.updating = false;
-	}
-
-	updateByRules(noEnergyLoss = false) {
-		//update simulation based on rules
-		_.forEach(this.bacterias, (bacteria) => {
-			var row = bacteria.row;
-			var col = bacteria.col;
-			let el = this.field[row][col];
-			let bacterias = _.sortBy(el.bacterias, ['energy'], ['desc']);
-			let foods = el.foods;
-			if (bacteria.hibernate > 0) {
-				return;
-			} else {
-				bacteria.rect.set('strokeWidth', 0);
-				bacteria.text.set('fill', 'black');
-			}
-
-			//first eat food if available, starting by strongest
-			//decrease if not available
-			if (foods.length > 0) {
-				let food = foods.pop();
-				food.draw();
-				bacteria.energy += food.energy;
-				food.rect.remove(); //remove food and redraw
-				this.foods = 
-					_.filter(this.foods, (f) => {
-						return f.index !== food.index;
-					}) || [];
-			} 
-
-			if (!noEnergyLoss) {
-				bacteria.energy -= this.energyLoss;
-			}
-
-			if (bacteria.energy > this.splitBacteriaEnergy) {
-				// console.log('Max energy reached!');
-				this.createBacteria(bacteria);
-				this.children++;
-				bacteria.energy = Math.floor(bacteria.energy / 2)
-			}
-
-			if (bacteria.energy == this.hibernateEnergy) {
-				console.log('Hibernating!');
-				bacteria.hibernate = this.hibernateRounds;
-				bacteria.rect.set('stroke', 'red');
-				bacteria.rect.set('strokeWidth', this.scale / 5);
-				bacteria.rect.set('fill', 'red');
-				bacteria.text.set('fill', 'red');
-			}
-
-			if (bacteria.energy < this.hibernateEnergy) {
-				bacteria.rect.set('opacity', 0.5 + (bacteria.energy/100));
-				bacteria.rect.set('fill', 'red');
-			} else {
-				bacteria.rect.set('fill', bacteria.fill);
-				bacteria.rect.set('opacity', 0.2 + (bacteria.energy/100));
-			}
-
-			if (bacteria.energy <= 0) {
-				console.log('Bacteria dead!');
-
-				//delete bacteria from simulation field
-				let delindex = 0;
-				if (this.field[bacteria.row][bacteria.col].bacterias.length == 1) {
-					this.field[bacteria.row][bacteria.col].bacterias = [];
-				} else {
-					this.field[bacteria.row][bacteria.col].bacterias = 
-						_.filter(this.field[bacteria.row][bacteria.col].bacterias, (bact) => {
-							if (bact.index == bacteria.index) {
-								bact.dead = true;
-							}
-
-							return bact.index !== bacteria.index;
-						}) || [];
-				}
-
-				this.bacterias = 
-					_.filter(this.bacterias, (bact) => {
-						return bact.index !== bacteria.index;
-					}) || [];
-
-				this.canvas.remove(bacteria.group);
-				bacteria.rect.remove();
-				bacteria.text.remove();
-				bacteria = null;
-				this.deadcount++;
-			}
-
-			if (bacteria) {
-				bacteria.text.setText((this.iteration - bacteria.age).toString());
-			}
-
-		});
-
-		this.canvas.renderAll();
-
-		$('#bacteriacount').text('Bacteria count: ' + this.bacterias.length.toString());
-		$('#foodcount').text('Food count: ' + this.foods.length.toString());
-		$('#childrencount').text('Children count: ' + (this.children).toString());
-		$('#deadcount').text('Dead bacteria count: ' + (this.deadcount).toString());
-		$('#iterationcount').text('Iteration count: ' + (this.iteration).toString());
-		$('#season').text('Season: ' + (this.foodSeasons[this.currentSeason].name));
-		this.updating = false;
-	}
-}
-
-function makeLine(x1, y1, x2, y2, scale) {
-	coords = [x1, y1, x2, y2];
-    return new fabric.Line(coords, {
-      fill: 'grey',
-      stroke: 'grey',
-      strokeWidth: scale / 20,
-      selectable: false,
-      evented: false,
-    });
-}	
-
-function update(canvas, object, row, col, lakeX, lakeY) {
-	object.top = row + lakeX;
-	object.left = col + lakeY;
-	object.setCoords();
-}
-
-function getRandomInt(max) {
-	return Math.floor(Math.random()*Math.floor(max));
-}
-
-class Simulator {
-	constructor(canvas, bacteriacount, foodcount, nrOfLakes = 2) {
-		this.sim = [];
-		this.canvas = canvas;
-		this.nrOfLakes = nrOfLakes;
-		for (let i = 0; i < this.nrOfLakes; i++) {
-            this.sim.push(new BacteriaeSimulator(canvas, bacteriacount, foodcount, i));
+        for (let row = 0; row < this.size; row++) {
+            for (let col = 0; col < this.size; col++) {
+                this.field[row][col] = new Object({
+                    bacterias: [],
+                    foods: []
+                });
+            }
         }
+
+        //create bacterias
+        for (let i = 0; i < this.bacteriaCount; i++) {
+            this.createBacteria();
+        }
+
+        //create food
+        this.createFood(this.foodCount);
+        // console.log(this.field);
+        this.updateStat();
+        return this;
+    }
+
+    createBacteria(motherBacteria = {}) {
+        var row = getRandomInt(this.size);
+        var col = getRandomInt(this.size);
+        var bact = new Bacteria(this, row, col, ++this.allbacterias, this.initialbacteriaEnergy, motherBacteria, this.lake);
+
+        this.bacterias.push(bact);
+        this.field[row][col].bacterias.push(bact);
+
+        return bact;
+    }
+
+    addBacteria() {
+
+    }
+
+    removeBacteria() {
+
+    }
+
+    bacteriaSwitchLakes(bacteria) {
+
+    }
+
+    createFood(foodCount) {
+        var row, col;
+        for (let i = 0; i < foodCount; i++) {
+            row = getRandomInt(this.size);
+            col = getRandomInt(this.size);
+            var food = new Food(this, row, col, this.foods.length, this.foodEnergy, this.lake);
+
+            this.foods.push(food);
+            this.field[row][col].foods.push(food);
+        }
+    }
+
+    createGrid() {
+        // for (let i = 0; i <= this.size; i++) {
+        // 	let scale = this.scale / 5;
+        // 	// if (i == 0 || i == this.size) {
+        // 	// 	scale = this.scale * 6;
+        // 	// }
+        // 	if (i == 0 || i == this.size) {
+        // 		scale = this.scale * 2;
+        //
+        // 	}
+        //
+        // 	this.canvas.add(makeLine(i * this.scale + this.lake.lakeY, 0 + this.lake.lakeX,
+        // 		i * this.scale + this.lake.lakeY, this.size * this.scale + this.lake.lakeX, scale));
+        // 	this.canvas.add(makeLine(0 + this.lake.lakeY, i * this.scale + this.lake.lakeX,
+        // 		this.size * this.scale + this.lake.lakeY, i * this.scale + this.lake.lakeX, scale));
+        // }
+    }
+
+    proceed() {
+        let time = Date.now();
+        // console.info('Start iteration!');
+        this.move(time);
+        // console.info('End Iteration! Duration:', Date.now() - time);
     }
 
     start() {
-		for (let i = 0; i < this.nrOfLakes; i++) {
-            this.sim[i].start();
+        //start by updating initial state
+        this.stopFlag = false;
+        this.updateByRules(true);
+        this.refresh();
+        // this.process = setInterval(this.proceed.bind(this), this.updateInterval);
+    }
+
+    stop() {
+        // clearTimeout(this.process);
+        this.stopFlag = true;
+    }
+
+    move(time) {
+        this.iteration++;
+        this.updating = true;
+
+        if (this.iteration >= this.maxiteration) {
+            window.alert('Max iteration reached! Stopping simulation!');
+            $("#restart").trigger('click');
+        }
+        if (this.bacterias <= 0) {
+            window.alert('All bacterias are dead! Simulation over!');
+            // console.log('All bacterias are dead! Simulation over!');
+            $("#restart").trigger('click');
+        }
+
+        //set food rotate seasons in years
+        let nextSeason = this.currentSeason + 1;
+        if (nextSeason > 3) {
+            nextSeason = 0;
+        }
+
+        //...and change seasons if needed
+        if (this.seasonIteration >= this.foodSeasons[nextSeason].iteration) {
+            this.seasonIteration = 0;
+            this.currentSeason = nextSeason;
+            console.info('CHANGING SEASONS!! ', this.foodSeasons[this.currentSeason].name);
+        }
+
+        this.layfood++;
+        this.seasonIteration++;
+
+        if (this.layfood >= this.foodSeasons[this.currentSeason].trigger) {
+            this.layfood = 0;
+            this.createFood(this.foodSeasons[this.currentSeason].foodperiter * this.size / 3);
+        }
+
+        this.updateStat();
+
+        //calculate movement
+        let moveit = 0;
+        _.forEach(this.bacterias, (bact) => {
+            //if hibernate don't mive, but still loose energy
+            if (bact.hibernate > 0) {
+                bact.hibernate -= 1;
+                bact.energy -= this.energyLoss / 10;
+            } else {
+                bact.move();
+            }
+        });
+
+        //after movement update simulation by rules
+        // console.info('End moving! Duration:', Date.now() - time);
+        // this.refresh();
+        this.updateByRules(time);
+        this.refresh();
+        if (this.oldestBacteria.age != null) {
+            this.oldestBacteria.rect.css({'border': '4px solid darkblue'});
         }
     }
 
-    move() {
-		for (let i = 0; i < this.nrOfLakes; i++) {
-            this.sim[i].move();
-        }
-    }
+    refresh(callback = this.proceed.bind(this)) {
+        if (this.stopFlag) return;
+        this.complete = this.bacterias.length;
+        for (let i = 0; i < this.bacterias.length; i++) {
+            let bact = this.bacterias[i];
+            this.update(bact.rect,
+                (bact.row) * this.scale,
+                (bact.col) * this.scale,
+                bact.lake.lakeX,
+                bact.lake.lakeY, callback);
 
-    stop(restart = false) {
-		for (let i = 0; i < this.nrOfLakes; i++) {
-			if (this.sim[i]) {
-                this.sim[i].stop();
-                if (restart) {
-                	this.canvas.clear();
-					delete this.sim[i];
-					this.sim[i] = null;
+            //update if low energy
+            if (bact.energy < this.hibernateEnergy) {
+                bact.rect.css({
+                    'opacity': (0.3 + (bact.energy / 100)),
+                    // 'background-color': 'red',
+                    'border': '2px solid red',
+                    width: this.scale,
+                    height: this.scale
+                });
+
+                if (bact.energy < 3) {
+                    bact.rect.css({
+                        'opacity': 1,
+                        'background-color': 'red',
+                    });
                 }
+            } else { //update of normal
+                if (bact.eyes && bact.eyes.level > 0) {
+                    bact.rect.css({'background-color': eyeColors[bact.eyes.level]});
+                } else {
+                    bact.rect.css({'background-color': bact.fill});
+                }
+                bact.rect.css({'opacity': (0.1 + (bact.energy / 100))});
+            }
+
+            //update hibernation state
+            if (bact.energy == this.hibernateEnergy) {
+                bact.hibernate = this.hibernateRounds;
+                bact.rect.css({
+                    'border': '4px solid red',
+                    'opacity': '0.2'
+                });
+            }
+
+            bact.rect.prop('title', `Bacteria params:
+                Index: ${bact.index},
+                Age: ${this.iteration - bact.age},
+                Eyes: ${bact.eyes && bact.eyes.level || 0},
+                Split: ${bact.splitBacteriaEnergy},
+                Strongness: ${bact.strongness},
+                tn:${bact.tn},
+                tne:${bact.tne},
+                te:${bact.te},
+                tse:${bact.tse},
+                ts:${bact.ts},
+                tsw:${bact.tsw},
+                tw:${bact.tw},
+                tnw:${bact.tnw}`)
+        }
+    }
+
+    //update by rules
+    // - eat food, increase energy
+    // - remove bacteria if dead,
+    // - loose energy based on rules
+    // - give birth to new bacteria
+    updateByRules(time, noEnergyLoss = false) {
+        //update simulation based on rules
+        for (let row = 0; row < this.size; row++) {
+            for (let col = 0; col < this.size; col++) {
+                if (!this.field[row][col].bacterias.length) {
+                    continue;
+                }
+                //strongest eat first!
+                //lowest energy eat then
+                //more evolved eat if equal
+                this.field[row][col].bacterias = this.field[row][col].bacterias.sort(function(a, b) {
+                    return b.strongness - a.strongness || a["energy"] - b["energy"] || (a.eyes && b.eyes && (a["eyes"].level - b["eyes"].level));
+                });
+
+                _.forEach(this.field[row][col].bacterias, (bacteria) => {
+                    //quit if problems, update hibernation color
+                    if (bacteria.hibernate > 0 || bacteria.dead) {
+                        return;
+                    } else {
+                        bacteria.rect.css({'border': bacteria.newBorn * 2 + 'px solid black'});
+                        if (bacteria.newBorn > 0) bacteria.newBorn--;
+                    }
+
+                    //first eat food if available, order based on rules (strongest, then eye level, then weakest
+                    let foods = this.field[row][col].foods;
+                    if (foods.length > 0) {
+                        let food = foods.pop();
+                        // food.draw();
+                        bacteria.energy += food.energy;
+
+                        //bounce when eating food
+                        bacteria.rect.css({
+                            'background-color': 'brown',
+                        });
+                        bacteria.rect.animate({
+                                width: this.scale * 1.4,
+                                height: this.scale * 1.4
+                            },
+                            this.updateInterval / 8,
+                            () => {
+                                bacteria.rect.animate({
+                                        width: this.scale,
+                                        height: this.scale
+                                    },
+                                    this.updateInterval / 8);
+                            });
+
+                        food.rect.fadeOut(this.updateInterval, () => {
+                            food.rect.remove()
+                            // food = null;
+                        }); //remove food and redraw
+                        this.foods =
+                            _.filter(this.foods, (f) => {
+                                return f.index !== food.index;
+                            }) || [];
+                    }
+
+                    //decrease energy
+                    if (!noEnergyLoss) {
+                        //loose less energy if low energy
+                        let split = (bacteria.energy < this.hibernateEnergy) ? 5 : 1;
+                        //if no movement less energy loss
+                        let energyloss = this.energyLoss / bacteria.noMove ? 2 : 1;
+                        bacteria.energy -= energyloss * this.strongness / split;
+
+                        //decrease extra energy because of eyes and level of eyes 30%
+                        if (bacteria.eyes && bacteria.eyes.level) {
+                            bacteria.energy -= energyloss * 0.3 * bacteria.eyes.level;
+                        }
+                    }
+
+                    //create new bacteria if energy level reached
+                    if (bacteria.energy > bacteria.splitBacteriaEnergy) {
+                        this.newestBacteria = this.createBacteria(bacteria);
+                        this.children++;
+                        bacteria.energy = Math.floor(bacteria.energy - this.initialbacteriaEnergy);
+                    }
+
+                    //set oldest bacteria
+                    if (this.oldestBacteria.age == null || ((this.iteration - bacteria.age) > (this.iteration - this.oldestBacteria.age))) {
+                        this.oldestBacteria = bacteria;
+                    }
+
+                    //bacteria dead delete bacteria from simulation field also close simulation if last bacteria
+                    if (bacteria.energy <= 0) {
+                        if (this.field[row][col].bacterias.length == 1) {
+                            this.field[row][col].bacterias = [];
+                        } else {
+                            this.field[row][col].bacterias =
+                                _.filter(this.field[row][col].bacterias, (bact) => {
+                                    return bact.index !== bacteria.index;
+                                }) || [];
+                        }
+
+                        this.bacterias =
+                            _.filter(this.bacterias, (bact) => {
+                                return bact.index !== bacteria.index;
+                            }) || [];
+
+                        if (!bacteria.dead) {
+                            bacteria.dead = true;
+                            if (bacteria.eyes != null) {
+                                --this.bacteriastat['lvl' + bacteria.eyes.level];
+                            } else {
+                                --this.bacteriastat.normal;
+                            }
+                        }
+                        bacteria.rect.css('background-color', 'black');
+                        bacteria.rect.animate({'opacity': 0}, this.updateInterval * 8, () => {
+                            bacteria.rect.remove();
+                            bacteria = null;
+
+                            //last bacteria dead!
+                            if (!this.bacterias.length) {
+                                this.move(Date.now());
+                            }
+                        });
+
+                        this.deadcount++;
+                    }
+                });
             }
         }
+
+        this.updateStat();
     }
 
-    restart() {
-		this.stop(true);
-	}
+    updateStat() {
+        $('#bacteriacount').text('Bacteria count: ' + this.bacterias.length.toString());
+        $('#foodcount').text('Food count: 		' + this.foods.length.toString());
+        $('#childrencount').text('Children count: ' + (this.children).toString());
+        $('#iterationcount').text('Iteration count: ' + (this.iteration).toString());
+        $('#deadcount').text('Dead bacteria count: ' + (this.deadcount).toString());
+        $('#season').text(`Food season: ${this.foodSeasons[this.currentSeason].name.toUpperCase()}!
+            Iterationtrigger: ${this.foodSeasons[this.currentSeason].trigger}!
+            Food: ${this.foodSeasons[this.currentSeason].foodperiter * this.size / 2}!`);
+        _.forEach(this.bacteriastat, (stat, key) => {
+            $('.'+key).text(key + ' bacteria: ' + (stat.toString()));
 
-    updateByRules() {
-		for (let i = 1; i <= this.nrOfLakes; i++) {
-            this.sim[i].updateByRules();
+        })
+        $('#canvas_div').css({
+            width: this.size * this.scale,
+            height: this.size * this.scale,
+            border: '2px solid black',
+        });
+
+        $('#oldestbacteria').text(
+            `Oldest bacteria params:
+            Age: ${this.iteration - this.oldestBacteria.age}
+            tn:${this.oldestBacteria.tn}
+            tne:${this.oldestBacteria.tne}
+            te:${this.oldestBacteria.te}
+            tse:${this.oldestBacteria.tse}
+            ts:${this.oldestBacteria.ts}
+            tsw:${this.oldestBacteria.tsw}
+            tw:${this.oldestBacteria.tw}
+            tnw:${this.oldestBacteria.tnw}`
+        );
+
+        $('#newestbacteria').text(
+            `Newest bacteria params:
+            Age: ${this.iteration - this.newestBacteria.age}
+            tn:${this.newestBacteria.tn}
+            tne:${this.newestBacteria.tne}
+            te:${this.newestBacteria.te}
+            tse:${this.newestBacteria.tse}
+            ts:${this.newestBacteria.ts}
+            tsw:${this.newestBacteria.tsw}
+            tw:${this.newestBacteria.tw}
+            tnw:${this.newestBacteria.tnw}`
+        );
+    }
+
+    update(object, row, col, lakeX, lakeY, callback = this.proceed.bind(this), animate = true) {
+        let finishCallback = () => {
+            --this.complete;
+
+            if (this.complete == 0) {
+                // console.log('COMPLEEEETEEEEEE!');
+                callback();
+            }
+        };
+
+        if (animate) {
+            object.animate({
+                    'left': col + lakeY,
+                    'top': row + lakeX,
+                },
+                this.updateInterval,
+                finishCallback);
+        } else {
+            object.css({
+                top: row + lakeY,
+                left: col + lakeX
+            });
+
+            finishCallback();
         }
     }
 }
 
-$(document).ready(function(){
+function makeLine(x1, y1, x2, y2, scale) {
+    coords = [x1, y1, x2, y2];
+    return new fabric.Line(coords, {
+        fill: 'grey',
+        stroke: 'grey',
+        strokeWidth: scale / 20,
+        selectable: false,
+        evented: false,
+    });
+}
 
-	var bacteriacount = parseInt($('#bacteria').val());
-	var foodcount = parseInt($('#food').val());
-	$('#bacteriacount').text($('#bacteriacount').text() + bacteriacount);
-	$('#foodcount').text($('#foodcount').text() + foodcount);
-	var initialized = true;
-	var updated = false;
-	let canvas = new fabric.Canvas('canvas', );
-	let sim = new Simulator(canvas, bacteriacount, foodcount, $('#lakecount').text() || 1);
 
-	$('#bacteria').change((el) => {
-		bacteriacount = parseInt($('#bacteria').val());
-		$('#bacteriacount').text('Bacteria count: ' + bacteriacount);
-	});
-
-	$('#food').change((el) => {
-		foodcount = parseInt($('#food').val());
-		$('#foodcount').text('Food count: ' + foodcount);
-	});
-
-	$('#create').click((el) => {
-		console.log('Resetting simulation!');
-		if (sim) {
-			sim.restart();
-		}
-		$('.canvas-container').remove();
-		$('<canvas id="canvas" width="1000px" height="1000px">').appendTo('body');
-        sim = new Simulator(canvas, 2);
-		initialized = true;
-	});
-
-	$("#restart").click((el) => {
-		var buttonAttributes = el.target.attributes;
-		if (el.target.value === 'Start') {
-			el.target.value = 'Pause';
-			console.log('Starting simulator!');
-			sim.start();
-		} else {
-			el.target.value = 'Start';
-			console.log('Stopping simulator!');
-			sim.stop();
-		}
-	});
-
-	$("#step").click((el) => {
-		if (!updated) {//initial update
-			sim.updateByRules(true);
-			updated = true;
-		}
-		sim.move();
-	});
-});
+function getRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max));
+}

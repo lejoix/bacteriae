@@ -3,6 +3,7 @@
   	<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.22/fabric.min.js"></script>
   	<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js"></script>
 	<script type="text/javascript" src="def.js"></script>
+	<script type="text/javascript" src="main.js"></script>
 	<script type="text/javascript" src="elements.js"></script>
 	<script type="text/javascript" src="simulator.js"></script>
 	<style>
@@ -35,26 +36,56 @@
 		<div class="controls">
 			<input type="button" value="Start" id="restart">
 			<input type="button" value="Step" id="step">
-			<input type="button" value="(Re)Create" id="create">
+			<!--<input type="button" value="Configure" id="configure">-->
+			<input type="button" value="(Re)Create" id="create" style="margin-bottom: 10px">
+			<!--<input type="button" value="Visualize" id="visualize">-->
 		</div>
-		<div class="inputs">
+		<div class="inputs" style="position:fixed;">
 			<label id="lake">Lake count: </label>
 			<input id="lakecount" type="text" value="1"/>
 			<br>
 			<label id="bacteriacount">Bacteria count: </label>
-			<input id="bacteria" type="text" value="20"/>
+			<input id="bacteria" type="text" value="100"/>
 			<br>
-			<label id="foodcount">Food count: </label>
+			<label id="foodcount">Initial Food count: </label>
 			<input id="food" type="text" value="100"/>
 			<br>
-			<label id="childrencount">Children count: 0</label>
-			<label id="deadcount">Dead bacteria count: 0</label>
+			<label id="foodfact">Food laying factor: </label>
+			<input id="foodfactor" type="text" value="1"/>
 			<br>
-			<label id="iterationcount">Iteration count: 0</label>
-			<br>
-			<label id="season">Season: </label>
-			<br>
-		</div>	
-		<canvas id="canvas" width="1000" height="1000"></canvas>
+            <label id="size">Size: 0</label>
+            <br>
+            <!--<label id="childrencount">Children count: 0</label>-->
+            <!--<br>-->
+            <label id="deadcount">Dead bacteria count: 0</label>
+            <br>
+            <label id="iterationcount">Iteration count: 0</label>
+            <br>
+            <label id="season">Season: </label>
+            <br>
+        </div>
+        <div class="visualize-bact" style="float:right;position: fixed;left: 300px">
+            <label id="normal"></label>
+            <label class="normal">Normal bacteria: 0</label>
+            <br>
+            <label id="lvl1"></label>
+            <label class="lvl1">Lvl1 eye bacteria: 0</label>
+            <br>
+            <label id="lvl2"></label>
+            <label class="lvl2">Lvl2 eye bacteria: 0</label>
+            <br>
+            <label id="lvl3"></label>
+            <label class="lvl3">Lvl3 eye bacteria: 0</label>
+            <br>
+            <label id="lvl4"></label>
+            <label class="lvl4">Lvl4 eye bacteria: 0</label>
+            <br>
+            <label id="lvl5"></label>
+            <label class="lvl5">Lvl5 eye bacteria: 0</label>
+			<!--<label id="oldestbacteria" style="width: 100px">Oldest bacteria: </label>-->
+			<!--<label id="newestbacteria" style="width: 100px; display: block">Newest bacteria: </label>-->
+        </div>
+		<div id="canvas_div" style="top:200px;position:relative;"></div>
+		<br>
 	</body>
 </html>
