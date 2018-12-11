@@ -436,7 +436,7 @@ class BacteriaeSimulator {
         $('#canvas_div').css({
             width: this.size * this.scale,
             height: this.size * this.scale,
-            border: '2px solid black',
+            border: '2px solid lightgrey',
         });
 
         $('#oldestbacteria').text(
