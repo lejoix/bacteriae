@@ -1,28 +1,29 @@
 class BacteriaeSimulator {
-    constructor(bacteriacount = 10, foodcount, foodfactor = 1, lakenumber) {
-        this.maxiteration = 10000;
+    constructor(lakenumber) {
+        this.starting = true;
+        this.maxiteration = 100000;
         this.iteration = 0;
         this.updateInterval = 500;//(bacteriacount * 4 < 700) ? 700 : bacteriacount * 4;
         // this.updateInterval = (bacteriacount * 4 >100 700) ? 700 : bacteriacount * 4;
-        this.bacteriaCount = bacteriacount || 10;
+        this.bacteriaCount = parseInt($('#bacteria').val()) || 10;
         this.size = Math.floor(this.bacteriaCount / 4);
         this.size = (this.size < 10) ? 10 : this.size;
         this.size = (this.size > 100) ? 100 : this.size;
-        this.scale = $(window).width() / (bacteriacount / 1.5);
-        this.scale = (this.scale > 40) ? 40 : this.scale;
-        this.scale = (this.scale < 7) ? 7 : this.scale;
-        this.foodCount = foodcount || this.bacteriaCount * 10;
-        this.foodFactor = foodfactor || 1;
+        this.scale = $(window).width() / (this.bacteriaCount / 1.83);
+        this.scale = (this.scale > 50) ? 50 : this.scale;
+        this.scale = (this.scale < 8) ? 8 : this.scale;
+        this.foodCount = parseInt($('#food').val()) || this.bacteriaCount * 10;
+        this.foodFactor = parseInt($('#foodfactor').val()) || 1;
+        this.foodEnergy = parseInt($('#foodnrg').val()) || 30; //energy value of food
         this.initialbacteriaEnergy = 40;
-        this.maxBacteriaEnergy = 60; //max bacteria energy
-        this.splitBacteriaEnergy = 200; //energy for splitting
+        this.maxBacteriaEnergy = 500; //max bacteria energy
+        this.splitBacteriaEnergy = parseInt($('#split').val()) || 200; //energy for splitting
         this.strongness = 1;
-        this.foodEnergy = 30; //energy value of food
         this.energyLoss = 1;
-        this.hibernateEnergy = 20;
+        this.hibernateEnergy =  parseInt($('#hibernate').val()) || 20;
         this.hibernateRounds = 10;
-        this.mutation = 0.05;
-        this.mutationAmount = 0.1;
+        this.mutation = parseInt($('#mut').val()) || 0.05;
+        this.mutationAmount = parseInt($('#mutamnt').val()) || 0.1;
         this.children = 0;
         this.layfood = 0;
         this.lake = new Lake(this, lakenumber);
@@ -35,28 +36,33 @@ class BacteriaeSimulator {
             lvl2: 0,
             lvl3: 0,
             lvl4: 0,
-            lvl5: 0
+            lvl5: 0,
+            lvl6: 0,
+            lvl7: 0,
+            lvl8: 0,
+            lvl9: 0,
+            lvl10: 0
         };
 
         this.foodSeasons = [{ //0 - spring, 1 - summer, 2 - autumn, 3 - winter
             name: 'spring',
             iteration: 100,
-            foodperiter: 4 * this.foodFactor,
+            foodperiter: 4 * this.foodFactor / 2,
             trigger: 7 / this.foodFactor
         }, {
             name: 'summer',
             iteration: 90,
-            foodperiter: 2 * this.foodFactor,
+            foodperiter: 2 * this.foodFactor / 2,
             trigger: 3 / this.foodFactor
         }, {
             name: 'autumn',
             iteration: 40,
-            foodperiter: 2 * this.foodFactor,
+            foodperiter: 2 * this.foodFactor / 2,
             trigger: 4 / this.foodFactor
         }, {
             name: 'winter',
             iteration: 90,
-            foodperiter: 1 * this.foodFactor,
+            foodperiter: 1 * this.foodFactor / 2,
             trigger: 7 / this.foodFactor
         }]; //number of iterations for a season and number of food per iteration
         this.seasonIteration = 0;
@@ -91,6 +97,7 @@ class BacteriaeSimulator {
         this.createFood(this.foodCount);
         // console.log(this.field);
         this.updateStat();
+        this.starting = false;
         return this;
     }
 
@@ -147,18 +154,26 @@ class BacteriaeSimulator {
         // }
     }
 
-    proceed() {
+    proceed(step) {
         let time = Date.now();
         // console.info('Start iteration!');
-        this.move(time);
+        if (step) {
+            this.step = false;
+            this.stopFlag = false;
+        }
+
+        if (!this.step) {
+            this.move(time, step);
+        }
         // console.info('End Iteration! Duration:', Date.now() - time);
     }
 
     start() {
         //start by updating initial state
+        this.step = false;
         this.stopFlag = false;
         this.updateByRules(true);
-        this.refresh();
+        this.refresh(this.proceed.bind(this));
         // this.process = setInterval(this.proceed.bind(this), this.updateInterval);
     }
 
@@ -167,7 +182,7 @@ class BacteriaeSimulator {
         this.stopFlag = true;
     }
 
-    move(time) {
+    move(time, step) {
         this.iteration++;
         this.updating = true;
 
@@ -199,7 +214,7 @@ class BacteriaeSimulator {
 
         if (this.layfood >= this.foodSeasons[this.currentSeason].trigger) {
             this.layfood = 0;
-            this.createFood(this.foodSeasons[this.currentSeason].foodperiter * this.size / 3);
+            this.createFood(this.foodSeasons[this.currentSeason].foodperiter * this.size / 6);
         }
 
         this.updateStat();
@@ -220,22 +235,17 @@ class BacteriaeSimulator {
         // console.info('End moving! Duration:', Date.now() - time);
         // this.refresh();
         this.updateByRules(time);
-        this.refresh();
+        this.refresh(this.proceed.bind(this), step);
         if (this.oldestBacteria.age != null) {
             this.oldestBacteria.rect.css({'border': '4px solid darkblue'});
         }
     }
 
-    refresh(callback = this.proceed.bind(this)) {
+    refresh(callback = this.proceed.bind(this), step) {
         if (this.stopFlag) return;
         this.complete = this.bacterias.length;
         for (let i = 0; i < this.bacterias.length; i++) {
             let bact = this.bacterias[i];
-            this.update(bact.rect,
-                (bact.row) * this.scale,
-                (bact.col) * this.scale,
-                bact.lake.lakeX,
-                bact.lake.lakeY, callback);
 
             //update if low energy
             if (bact.energy < this.hibernateEnergy) {
@@ -271,20 +281,25 @@ class BacteriaeSimulator {
                 });
             }
 
-            bact.rect.prop('title', `Bacteria params:
-                Index: ${bact.index},
-                Age: ${this.iteration - bact.age},
-                Eyes: ${bact.eyes && bact.eyes.level || 0},
-                Split: ${bact.splitBacteriaEnergy},
-                Strongness: ${bact.strongness},
-                tn:${bact.tn},
-                tne:${bact.tne},
-                te:${bact.te},
-                tse:${bact.tse},
-                ts:${bact.ts},
-                tsw:${bact.tsw},
-                tw:${bact.tw},
-                tnw:${bact.tnw}`)
+            bact.rect.prop('title', `Index: ${bact.index},
+Age: ${this.iteration - bact.age},
+Eyes: ${bact.eyes && bact.eyes.level || 0},
+Split: ${bact.splitBacteriaEnergy},
+Strongness: ${bact.strongness},
+tn:${bact.tn},
+tne:${bact.tne},
+te:${bact.te},
+tse:${bact.tse},
+ts:${bact.ts},
+tsw:${bact.tsw},
+tw:${bact.tw},
+tnw:${bact.tnw}`);
+
+            this.update(bact.rect,
+                (bact.row) * this.scale,
+                (bact.col) * this.scale,
+                bact.lake.lakeX,
+                bact.lake.lakeY, callback, step);
         }
     }
 
@@ -355,12 +370,12 @@ class BacteriaeSimulator {
                         //loose less energy if low energy
                         let split = (bacteria.energy < this.hibernateEnergy) ? 5 : 1;
                         //if no movement less energy loss
-                        let energyloss = this.energyLoss / bacteria.noMove ? 2 : 1;
+                        let energyloss = this.energyLoss / (bacteria.noMove ? 2 : 1);
                         bacteria.energy -= energyloss * this.strongness / split;
 
-                        //decrease extra energy because of eyes and level of eyes 30%
+                        //decrease extra energy because of eyes and level of eyes 20%
                         if (bacteria.eyes && bacteria.eyes.level) {
-                            bacteria.energy -= energyloss * 0.3 * bacteria.eyes.level;
+                            bacteria.energy -= (energyloss * 0.2 * bacteria.eyes.level) / split;
                         }
                     }
 
@@ -436,7 +451,13 @@ class BacteriaeSimulator {
         $('#canvas_div').css({
             width: this.size * this.scale,
             height: this.size * this.scale,
-            border: '2px solid lightgrey',
+            // border: '2px solid lightgrey',
+        });
+
+        $('#canvas_wrapper').css({
+            width: this.size * this.scale,
+            height: this.size * this.scale,
+            // border: '2px solid lightgrey',
         });
 
         $('#oldestbacteria').text(
@@ -466,13 +487,15 @@ class BacteriaeSimulator {
         );
     }
 
-    update(object, row, col, lakeX, lakeY, callback = this.proceed.bind(this), animate = true) {
+    update(object, row, col, lakeX, lakeY, callback = this.proceed.bind(this), step = false, animate = true) {
         let finishCallback = () => {
             --this.complete;
 
             if (this.complete == 0) {
                 // console.log('COMPLEEEETEEEEEE!');
-                callback();
+                if (step) this.step = true;
+                step = false;
+                callback(false);
             }
         };
 

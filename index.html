@@ -8,97 +8,167 @@
 	<script type="text/javascript" src="simulator.js"></script>
 	<style>
 		label {
-			padding: 1px 0;
+			padding: 6px 0;
 			display: inline-block;
+			font-size:28px;
 		}
 
 		input[type="text"] {
-			padding: 5px;
+			padding: 15px 5px;
 			float:right;
 			width: 50px;
     		text-align: right;
     		height: 20px;
+			font-size:18px;
 		}
 
-		input[type="button"] {
+		button {
 			padding: 10px;
+			font-size:18px;
+			border-radius: 5px;
+			border: 2px solid grey;
+			background: lightblue;
+			outline: none;
+		}
+
+		#create {
+			background: orange;
+		}
+
+		#restart {
+			background: lightgreen;
+		}
+
+		#configure {
+			background: lightgrey;
 		}
 
 		.controls {
-			padding-bottom: 5px;
+			padding: 0 20px;
 		}
 
 		.inputs {
-			width: 250px;
+			display: inline-block;
+			/* top: 20px; */
+			border: 5px solid grey;
+			padding: 18px;
+			margin: 1px;
+			margin-top: 5px;
+			border-radius: 5px;
+			float:left;
 		}
 
-        #canvas_div::after {
+		.stats {
+			border: 2px solid black;
+			position: relative;
+			font-size: 25px;
+			padding: 10px;
+			margin: 0;
+			border: 10px solid STEELBLUE;
+			border-radius: 15px;
+			background: lightgoldenrodyellow;
+		}
+
+		#canvas_wrapper::after {
             content: "";
-            background-image: url(06.png);
+            /*background-image: url(06.png);*/
             background-size: cover;
-            opacity: 0.3;
             top: 0;
             left: 0;
             bottom: 0;
             right: 0;
             position: absolute;
             z-index: -1;
+			border-radius: 15px;
+			opacity: 1;
         }
+
+		#canvas_wrapper::after {
+			border-radius: 15px;
+			padding:20px;
+			background: white;
+			margin: -3px;
+			border-radius: 15px;
+			background-image: radial-gradient(white, LIGHTBLUE, STEELBLUE);
+			opacity: 0.5;
+		}
+
+		#canvas_wrapper {
+			left: 425px;
+			padding: 5px 7px 7px 5px;
+			border: 10px solid STEELBLUE;
+			border-radius: 15px;
+		}
+
+		.visualize-bact {
+			font-size: 25px;
+			border: 5px solid grey;
+			padding: 10px;
+			margin: 1px;
+			margin-top: 5px;
+			border-radius: 5px;
+		}
 	</style>
 	<body>
-		<div class="controls">
-			<input type="button" value="Start" id="restart">
-			<input type="button" value="Step" id="step">
-			<!--<input type="button" value="Configure" id="configure">-->
-			<input type="button" value="(Re)Create" id="create" style="margin-bottom: 10px">
-			<!--<input type="button" value="Visualize" id="visualize">-->
+		<div class="inputs stats" style="">
+			<div style="font-size: 20px;">
+				<div class="controls" style="">
+					<button type="button" value="Start" id="restart" style="display: inline-block;">Start</button>
+					<!--<input type="button" value="Start" id="restart">-->
+					<button type="button" value="Step" id="step">Step</button>
+					<button type="button" value="(Re)Create" id="create" style="">(Re)Create</button>
+					<button type="button" value="Config" id="configure">Config</button>
+				</div>
+				<div class="inputs " style="">
+					<!--<label id="lake">Lake count: </label>-->
+					<!--<input id="lakecount" type="text" value="1"/>-->
+					<!--<br>-->
+					<div class="configure" style="display: none">
+						<label id="bacteriacountlbl">Bacterias: </label>
+						<input id="bacteria" type="text" value="100"/>
+						<br>
+						<label id="foodcountlbl">Initial Food count: </label>
+						<input id="food" type="text" value="100"/>
+						<br>
+						<label id="foodnrglbl">Food energy: </label>
+						<input id="foodnrg" type="text" value="30"/>
+						<br>
+						<label id="foodfact">Food laying factor: </label>
+						<input id="foodfactor" type="text" value="1"/>
+						<br>
+						<label id="mutation">Mutation probability: </label>
+						<input id="mut" type="text" value="0.05"/>
+						<br>
+						<label id="mutationAmnt">Mutation amount: </label>
+						<input id="mutamnt" type="text" value="1"/>
+						<br>
+						<label id="splitlbl">Split energy: </label>
+						<input id="split" type="text" value="200"/>
+						<br>
+						<label id="hiblbl">Hibernate energy: </label>
+						<input id="hibernate" type="text" value="30"/>
+						<br>
+						<label id="size">Size: 0</label>
+						<br>
+					</div>
+					<label id="bacteriacount">Bacteria count: </label>
+					<br>
+					<label id="foodcount">Initial Food count: </label>
+					<br>
+					<label id="deadcount">Dead bacteria count: 0</label>
+					<br>
+					<label id="iterationcount">Iteration count: 0</label>
+					<br>
+					<label id="season" style="width: 325px">Season: </label>
+					<br>
+				</div>
+				<div class="visualize-bact" style="">
+				</div>
+			</div>
+
 		</div>
-		<div class="inputs" style="position:fixed;">
-			<label id="lake">Lake count: </label>
-			<input id="lakecount" type="text" value="1"/>
-			<br>
-			<label id="bacteriacount">Bacteria count: </label>
-			<input id="bacteria" type="text" value="100"/>
-			<br>
-			<label id="foodcount">Initial Food count: </label>
-			<input id="food" type="text" value="100"/>
-			<br>
-			<label id="foodfact">Food laying factor: </label>
-			<input id="foodfactor" type="text" value="1"/>
-			<br>
-            <label id="size">Size: 0</label>
-            <br>
-            <!--<label id="childrencount">Children count: 0</label>-->
-            <!--<br>-->
-            <label id="deadcount">Dead bacteria count: 0</label>
-            <br>
-            <label id="iterationcount">Iteration count: 0</label>
-            <br>
-            <label id="season">Season: </label>
-            <br>
-        </div>
-        <div class="visualize-bact" style="float:right;position: fixed;left: 300px">
-            <label id="normal"></label>
-            <label class="normal">Normal bacteria: 0</label>
-            <br>
-            <label id="lvl1"></label>
-            <label class="lvl1">Lvl1 eye bacteria: 0</label>
-            <br>
-            <label id="lvl2"></label>
-            <label class="lvl2">Lvl2 eye bacteria: 0</label>
-            <br>
-            <label id="lvl3"></label>
-            <label class="lvl3">Lvl3 eye bacteria: 0</label>
-            <br>
-            <label id="lvl4"></label>
-            <label class="lvl4">Lvl4 eye bacteria: 0</label>
-            <br>
-            <label id="lvl5"></label>
-            <label class="lvl5">Lvl5 eye bacteria: 0</label>
-			<!--<label id="oldestbacteria" style="width: 100px">Oldest bacteria: </label>-->
-			<!--<label id="newestbacteria" style="width: 100px; display: block">Newest bacteria: </label>-->
-        </div>
-		<div id="canvas_div" style="top:200px;position:relative;"></div>
-		<br>
+		<div id="canvas_wrapper" style="position:relative;">
+			<div id="canvas_div" style="position:relative;"></div>
+		</div>
 	</body>
 </html>

@@ -108,21 +108,24 @@ class Bacteria extends Element {
         }
 
         //mutation of splitenergy
-        this.splitBacteriaEnergy = this.mutation(motherBacteria.splitBacteriaEnergy || this.simulator.splitBacteriaEnergy, 10);
+        this.splitBacteriaEnergy = this.mutation(motherBacteria.splitBacteriaEnergy || this.simulator.splitBacteriaEnergy, 10, 1);
         this.strongness = this.mutation(motherBacteria.strongness || this.simulator.strongness, 10);
         this.noMove = false;
 
         // let eyeMut = 0.01;
-        let eyeMut = (Math.random());
-        let prevLevel = (motherBacteria.eyes && motherBacteria.eyes.level) ? motherBacteria.eyes.level : 1;
-        //probability for eye level can lower also
-        //1 - sees one square in all directions, 2 - sees two squares in all directions etc.
-        //if mother has eyes children have eyes also
-        this.eyes = (eyeMut < this.simulator.mutation * 8 || motherBacteria.eyes) ? {
-            level: (Math.random() < this.simulator.mutation * 4) ? (++prevLevel): (prevLevel),
-        } : null; //has some probability to develop eyes
+        // if (!this.simulator.starting) {
+            let eyeMut = (Math.random());
+            let prevLevel = (motherBacteria.eyes && motherBacteria.eyes.level) ? motherBacteria.eyes.level : 1;
+            //probability for eye level can lower also
+            //1 - sees one square in all directions, 2 - sees two squares in all directions etc.
+            //if mother has eyes children have eyes also
+            this.eyes = (eyeMut < this.simulator.mutation * 8 || motherBacteria.eyes) ? {
+                level: (Math.random() < this.simulator.mutation * 4) ? (--prevLevel) :
+                    (Math.random() > this.simulator.mutation * 4 && Math.random() < this.simulator.mutation * 12 ? ++prevLevel : prevLevel),
+            } : null; //has some probability to develop eyes
+        // }
 
-        if (this.eyes && this.eyes.level == 0) {
+        if (this.eyes && this.eyes.level <= 0) {
             this.eyes = null;
         }
         this.curdir = 0;
@@ -131,7 +134,7 @@ class Bacteria extends Element {
         this.hibernate = 0;
         this.dead = false;
         this.age = this.simulator.iteration;
-        this.fill = this.eyes ? eyeColors[this.eyes.level] : '#' + colors[this.lake.lakeNumber];
+        this.fill = this.eyes ? eyeColors[this.eyes.level] || this.eyes.level * '#123123': bacteriaColor; //'#' + colors[this.lake.lakeNumber];
 
         // console.log(`Giving birth to a new bacteria! ${row}, ${col}`);
 
@@ -141,10 +144,10 @@ class Bacteria extends Element {
     }
 
     //if mutation then return percent amount to mutate otherwise false
-    mutation(value, factor = 1) {
-        let mutSign = (Math.random() < 0.5 ? -1 : 1) * this.simulator.mutationAmount;
+    mutation(value, factor = 1, amount = this.simulator.mutationAmount) {
+        let mutSign = (Math.random() < 0.5 ? -1 : 1) * amount;
         let random = Math.random();
-        return random < this.simulator.mutation * factor ? value + mutSign * value : value;
+        return random < this.simulator.mutation * factor ? value + mutSign : value;
     }
 
     draw(redraw = true) {
@@ -163,32 +166,46 @@ class Bacteria extends Element {
 
         $('#canvas_div').append(this.rect);
         //add bacteria to staticstics
-        let stat = $('<div></div>').css({
+        let stat = $('<div class="bactstat"></div>').css({
             display: 'inline-block',
             position: 'relative',
-            width: this.simulator.scale / 2 + 'px',
-            height: this.simulator.scale / 2+ 'px',
+            width: '40px',
+            height: '40px',
             'background-color': this.fill,
             opacity: 1,
-            'border-radius': this.simulator.scale + 'px',
-            padding: '5px'
+            'border-radius': this.simulator.scale * 2 + 'px',
+            margin: '5px',
+            'vertical-align': 'middle'
+        });
+        let statlbl = $('<label class=""></label><br>').css({
+            display: 'inline-block',
+            position: 'relative',
+            width: '40px',
+            height: '40px',
+            'background-color': this.fill,
+            opacity: 1,
+            'border-radius': this.simulator.scale * 2 + 'px',
+            margin: '5px',
+            'vertical-align': 'middle'
         });
 
         let id = '';
         let str = '';
         if (this.eyes != null) {
             // this.eyes.level = 3;
-            str = 'lvl'+this.eyes.level;
-            id = '#'+str;
+            id = 'lvl'+this.eyes.level;
+            // id = '#'+str;
             stat[0].id = id;
-            $(id).replaceWith(stat);
         } else {
-            str = 'normal';
-            id = '#' + str;
+            id = 'normal';
+            // id = '#' + str;
             stat[0].id = id;
-            $(id).replaceWith(stat);
         }
-        ++this.simulator.bacteriastat[str];
+
+        if (!$('#' + id).length) {
+            $('.visualize-bact').append(stat).append('<label class=' + id + '>' + id + '</label>').append('<br>');
+        }
+        ++this.simulator.bacteriastat[id];
     }
 
     move() { //this part is just for drawing and updating the field, rules are applied in the simulation
@@ -346,8 +363,10 @@ class Food extends Element {
             left: this.col*this.simulator.scale + this.lake.lakeY,
             width: this.simulator.scale + 'px',
             height: this.simulator.scale + 'px',
+            'background-image': 'url(download.jpeg)',
             'background-color': foodColor,
             'opacity': 0.4,
+            border: '1px solid black',
             'border-radius': '5px',
             // 'background-image': 'url(bact.png)',
             // 'background-size': '20px'

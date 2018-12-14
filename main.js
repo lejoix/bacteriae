@@ -1,9 +1,9 @@
 class Simulator {
-    constructor(bacteriacount, foodcount, foodfactor, nrOfLakes = 2) {
+    constructor(nrOfLakes = 2) {
         this.sim = [];
         this.nrOfLakes = nrOfLakes;
         for (let i = 0; i < this.nrOfLakes; i++) {
-            this.sim.push(new BacteriaeSimulator(bacteriacount, foodcount, foodfactor, i));
+            this.sim.push(new BacteriaeSimulator(i));
         }
     }
 
@@ -19,6 +19,14 @@ class Simulator {
         for (let i = 0; i < this.nrOfLakes; i++) {
             if (this.sim[i].move()) {
                 this.sim[i].move();
+            }
+        }
+    }
+
+    proceed(step = false) {
+        for (let i = 0; i < this.nrOfLakes; i++) {
+            if (this.sim[i].proceed) {
+                this.sim[i].proceed(step);
             }
         }
     }
@@ -95,7 +103,7 @@ $(document).ready(function(){
     $('#foodcount').text($('#foodcount').text() + foodcount);
     var initialized = true;
     var updated = false;
-    let sim = new Simulator(bacteriacount, foodcount, parseInt($('#foodfactor').val()) || 1, $('#lakecount').val() || 1);
+    let sim = new Simulator($('#lakecount').val() || 1);
     $('#size').text('Size: ' + sim.sim[0].size.toString());
 
     $('#bacteria').change((el) => {
@@ -106,10 +114,10 @@ $(document).ready(function(){
     });
 
     $('#configure').click(() => {
-        if($('div.inputs').css('display') === 'none') {
-            $('div.inputs').css('display', 'block');
+        if($('.configure').css('display') === 'none') {
+            $('div.configure').css('display', 'block');
         } else {
-            $('div.inputs').css('display', 'none');
+            $('div.configure').css('display', 'none');
         }
     });
 
@@ -123,35 +131,36 @@ $(document).ready(function(){
         if (sim) {
             sim.restart();
         }
+        $('#canvas_wrapper').remove();
         $('#canvas_div').remove();
-        if ($("#restart").val() === 'Pause') {
+        if ($("#restart").text() === 'Pause') {
             $("#restart").trigger('click');
         }
-        let canvas = $('<div id="canvas_div" style="top:200px;position:relative;"></div>');
+        let canvas = $('<div id="canvas_wrapper" style="position:relative;">\n' +
+            '\t\t\t<div id="canvas_div" style="position:relative;"></div>\n' +
+            '\t\t</div>\n' +
+            '<div id="canvas_div" style="position:relative;"></div></div>');
         $('body').append(canvas);
-        sim = new Simulator(bacteriacount, foodcount, parseInt($('#foodfactor').val() || 1), $('#lakecount').val() || 1);
+        sim = new Simulator($('#lakecount').val() || 1);
         $('#size').text('Size: ' + sim.sim[0].size.toString());
         initialized = true;
     });
 
     $("#restart").click((el) => {
         var buttonAttributes = el.target.attributes;
-        if (el.target.value === 'Start') {
-            el.target.value = 'Pause';
+        if (el.target.textContent === 'Start') {
+            el.target.textContent = 'Pause';
             console.log('Starting simulator!');
             sim.start();
         } else {
-            el.target.value = 'Start';
+            el.target.textContent = 'Start';
             console.log('Stopping simulator!');
             sim.stop();
         }
     });
 
     $("#step").click((el) => {
-        if (!updated) {//initial update
-            sim.updateByRules(true);
-            updated = true;
-        }
-        sim.move();
+        sim.proceed(true);
+        $('#restart').text('Start');
     });
 });

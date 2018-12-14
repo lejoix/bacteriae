@@ -90,13 +90,14 @@ var colors = [
 ];
 
 var eyeColors = [
-	'Lime',
-	'Lime',
-	'DarkGreen',
-	'Magenta',
-	'Purple',
-	'Turquoise',
+	'LIGHTBLUE',
+	'YELLOWGREEN',
+	'DARKGREEN',
+	'MEDIUMORCHID',
+	'DARKSLATEBLUE',
+	'TURQUOISE',
 ];
 
 var eatColor = 'rgb(150,150,150)';
-var foodColor = 'FireBrick';
+var foodColor = 'SADDLEBROWN';
+var bacteriaColor = 'STEELBLUE';
